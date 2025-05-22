@@ -46,7 +46,7 @@ def fetch_cpbl_data():
 
     try:
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "el-table__body"))
+            EC.presence_of_element_located((By.CLASS_NAME, "RecordTableWrap"))
         )
     except:
         print("等待表格載入時失敗")
@@ -56,22 +56,27 @@ def fetch_cpbl_data():
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    table = soup.find("table", class_="el-table__body")
-    if table is None:
+    record_table = soup.find("div", class_="RecordTableWrap")
+    if record_table is None:
         print("無法找到表格，網站結構可能已更新")
         return
 
-    team_data = []
-    for row in table.find_all("tr"):
-        columns = row.find_all("td")
-        if len(columns) >= 8:
-            team_data.append([col.text.strip() for col in columns[:8]])
+    teams = []
+    for row in record_table.find_all("tr")[1:]:
+        cols = row.find_all("td")
+        if len(cols) < 4:
+            continue
+        team_name = cols[0].text.strip()
+        games = int(cols[1].text.strip())
+        try:
+            wins, draws, losses = map(int, cols[2].text.strip().split("-"))
+            win_percentage = float(cols[3].text.strip())
+        except:
+            continue
+        teams.append((team_name, games, wins, losses, draws, win_percentage))
 
-    # **建立 SQLite 資料庫（如果不存在）**
     conn = sqlite3.connect("cpbl_records.db")
     c = conn.cursor()
-
-    # **建立資料表**
     c.execute("""
         CREATE TABLE IF NOT EXISTS cpbl_teams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,12 +88,9 @@ def fetch_cpbl_data():
             win_percentage REAL
         )
     """)
-
-    # **清除舊資料**
     c.execute("DELETE FROM cpbl_teams")
 
-    # **插入或更新資料**
-    for team in team_data:
+    for team in teams:
         c.execute('''
             INSERT INTO cpbl_teams (team, games, wins, losses, draws, win_percentage)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -98,24 +100,16 @@ def fetch_cpbl_data():
                 losses = excluded.losses,
                 draws = excluded.draws,
                 win_percentage = excluded.win_percentage
-        ''', (
-            team["team"], team["games"], team["wins"], team["losses"],
-            team["draws"], team["win_percentage"]
-        ))
-
-    # **確認資料表是否已成功更新**
-    c.execute("SELECT COUNT(*) FROM cpbl_teams")
-    count = c.fetchone()[0]
-    print(f"資料表目前共有 {count} 筆資料")
+        ''', team)
 
     conn.commit()
     conn.close()
 
-    # **更新最後更新時間**
     with open("last_update_time.txt", "w") as f:
         f.write(datetime.now().isoformat())
 
     print("球隊戰績已成功更新並存入 SQLite 資料庫！")
+
 
 
 
@@ -205,8 +199,8 @@ def index():
 
 @app.route("/update")
 def update():
-    # if not is_update_allowed():
-    #     return "更新太頻繁，請稍後再試。", 429
+    if not is_update_allowed():
+        return "更新太頻繁，請稍後再試。", 429
     fetch_cpbl_data()
     update_last_update_time()
     return redirect(url_for("index"))
