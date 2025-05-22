@@ -64,29 +64,60 @@ def fetch_cpbl_data():
         if len(columns) >= 8:
             team_data.append([col.text.strip() for col in columns[:8]])
 
+    # **建立 SQLite 資料庫（如果不存在）**
     conn = sqlite3.connect("cpbl_records.db")
     c = conn.cursor()
+
+    # **建立資料表**
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS cpbl_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team TEXT UNIQUE,
+            games INTEGER,
+            wins INTEGER,
+            losses INTEGER,
+            draws INTEGER,
+            win_percentage REAL,
+            gb TEXT,
+            streak TEXT
+        )
+    """)
+
+    # **清除舊資料**
     c.execute("DELETE FROM cpbl_records")
 
+    # **插入或更新資料**
     for team in team_data:
         c.execute('''
             INSERT INTO cpbl_records (team, games, wins, losses, draws, win_percentage, gb, streak)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(team) DO UPDATE SET
+                games = excluded.games,
+                wins = excluded.wins,
+                losses = excluded.losses,
+                draws = excluded.draws,
+                win_percentage = excluded.win_percentage,
+                gb = excluded.gb,
+                streak = excluded.streak
         ''', (
             team[0], int(team[1]), int(team[2]), int(team[3]),
             int(team[4]), float(team[5]), team[6], team[7]
         ))
 
+    # **確認資料表是否已成功更新**
+    c.execute("SELECT COUNT(*) FROM cpbl_records")
+    count = c.fetchone()[0]
+    print(f"資料表目前共有 {count} 筆資料")
+
     conn.commit()
     conn.close()
 
+    # **更新最後更新時間**
     with open("last_update_time.txt", "w") as f:
         f.write(datetime.now().isoformat())
 
+    print("球隊戰績已成功更新並存入 SQLite 資料庫！")
 
-    # 更新最後更新時間
-    with open("last_update_time.txt", "w") as f:
-        f.write(datetime.datetime.now().isoformat())
 
 
 
