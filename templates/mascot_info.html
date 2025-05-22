@@ -1,21 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ mascot_name }} 的介紹</title>
+{% block title %}{{ mascot_name }} 的介紹{% endblock %}
+<title>{{ mascot_name }} 的介紹</title>
 </head>
+
+{% block content %}
 
 <body>
     <h1>{{ mascot_name }}</h1>
-    <p>所屬球隊：{{ team }}</p>
-    <p>{{ description }}</p>
 
-    <!-- 顯示吉祥物圖片 -->
-    {% if image_path %}
-    <img src="{{ url_for('static', filename=image_path) }}" alt="{{ mascot_name }} 的圖片" width="300">
-    {% endif %}
+    <div class="container">
+        <div class="description">
+            <p>所屬球隊：{{ team }}</p>
+            <p>{{ description }}</p>
+        </div>
+
+        <!-- 顯示吉祥物圖片 -->
+        <div class="mascot-img">
+            {% if image_path %}
+            <img src="{{ url_for('static', filename=image_path) }}" alt="{{ mascot_name }} 的圖片" width="300">
+            {% endif %}
+        </div>
+    </div>
 
     {% if video_path %}
     <video width="480" height="320" controls>
@@ -23,7 +29,8 @@
     </video>
     {% endif %}
 
-    <br><a href="/">回首頁</a>
+    <br><a href="/" class="button">回首頁</a>
 </body>
+{% endblock %}
 
 </html>

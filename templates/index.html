@@ -1,80 +1,34 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中華職棒戰績</title>
-    <style>
-        .mascot-list {
-            display: flex;
-            flex-direction: row;
-            /* 水平排列 */
-            flex-wrap: nowrap;
-            /* 不允許換行 */
-            list-style: none;
-            padding: 0;
-            overflow-x: auto;
-            /* 超出時橫向滾動 */
-            gap: 10px;
-            /* 隊伍間距 */
-        }
+{% block title %}2025中華職棒戰績{% endblock %}
 
-        .mascot-list>li {
-            flex: 0 0 auto;
-            /* 固定寬度，不收縮 */
-            min-width: 150px;
-            /* 更小的寬度以避免換行 */
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 8px;
-            position: relative;
-            background-color: #f9f9f9;
-        }
+<style>
 
-        /* 隱藏吉祥物清單 */
-        .mascot-list ul {
-            display: none;
-            list-style: none;
-            padding-left: 0;
-            margin-top: 8px;
-        }
-
-        /* 滑鼠懸停時顯示吉祥物 */
-        .mascot-list>li:hover ul {
-            display: block;
-        }
-
-        .mascot-list a {
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .mascot-list ul li {
-            padding: 2px 0;
-        }
-    </style>
+</style>
 </head>
 
 <body>
+    {% block content %}
     <h1>中華職棒戰績</h1>
     <h2>吉祥物介紹</h2>
 
-    <ul class="mascot-list">
-        {% for team in mascots %}
-        <li>
-            <a href="{{ team.link }}">{{ team.team }}</a>
-            <ul>
-                {% for m in team.mascots %}
-                <li>{{ m }}</li>
-                {% endfor %}
-            </ul>
-        </li>
-        {% endfor %}
-    </ul>
+    <div class="mascot-banner">
+        <ul class="mascot-list">
+            {% for team in mascots %}
+            <li>
+                <a href="{{ team.link }}">{{ team.team }}</a>
+                <ul>
+                    {% for m in team.mascots %}
+                    <li>{{ m }}</li>
+                    {% endfor %}
+                </ul>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
 
     <form action="/update" method="get">
-        <button type="submit">更新最新戰績</button>
+        <button class="button" type="submit">更新最新戰績</button>
     </form>
 
     <table border="1">
@@ -100,5 +54,6 @@
     <hr>
     <p>本網頁所有資料來源取自CPBL中華職棒大聯盟</p>
 </body>
+{% endblock %}
 
 </html>

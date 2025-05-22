@@ -1,23 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ mascot.team }} 吉祥物介紹</title>
+{% block title %}{{ mascot.team }} 吉祥物介紹{% endblock %}
+<title>{{ mascot.team }} 吉祥物介紹</title>
 </head>
+{% block content %}
 
 <body>
     <h1>{{ mascot.team }} 吉祥物介紹</h1>
-    <ul>
-        {% for m in mascot.mascots %}
-        <li><a href="/mascot/{{ mascot.team|replace(' ', '') }}/{{ m }}">{{ m }}</a></li>
-        {% endfor %}
-    </ul>
+
+    <div class="mascot-team-intro">
+        <ul>
+            {% for m in mascot.mascots %}
+            <li><a href="/mascot/{{ mascot.team|replace(' ', '') }}/{{ m }}" class="button"
+                    style="background-color: rgb(150, 123, 174);font-size: 18px;">{{ m }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
 
     <hr>
     <p>資料來源:https://www.popdaily.com.tw/life/1549926 和 CPBL中華職棒大聯盟&各球隊官網</p>
-    <a href="/">回首頁</a>
+    <a href="/" class="button">回首頁</a>
 </body>
+{% endblock %}
 
 </html>

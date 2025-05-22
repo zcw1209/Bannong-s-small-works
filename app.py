@@ -1,4 +1,5 @@
 from flask import Flask, render_template, redirect, url_for
+
 import sqlite3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -11,6 +12,8 @@ import os
 from datetime import datetime, timedelta
 
 import time
+
+import sys
 
 app = Flask(__name__)
 
@@ -88,7 +91,7 @@ def fetch_cpbl_data():
     for team in team_data:
         c.execute('''
             INSERT INTO cpbl_teams (team, games, wins, losses, draws, win_percentage)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(team) DO UPDATE SET
                 games = excluded.games,
                 wins = excluded.wins,
@@ -96,12 +99,12 @@ def fetch_cpbl_data():
                 draws = excluded.draws,
                 win_percentage = excluded.win_percentage
         ''', (
-            team[0], int(team[1]), int(team[2]), int(team[3]),
-            int(team[4]), float(team[5])
+            team["team"], team["games"], team["wins"], team["losses"],
+            team["draws"], team["win_percentage"]
         ))
 
     # **確認資料表是否已成功更新**
-    c.execute("SELECT COUNT(*) FROM cpbl_records")
+    c.execute("SELECT COUNT(*) FROM cpbl_teams")
     count = c.fetchone()[0]
     print(f"資料表目前共有 {count} 筆資料")
 
@@ -202,8 +205,8 @@ def index():
 
 @app.route("/update")
 def update():
-    if not is_update_allowed():
-        return "更新太頻繁，請稍後再試。", 429
+    # if not is_update_allowed():
+    #     return "更新太頻繁，請稍後再試。", 429
     fetch_cpbl_data()
     update_last_update_time()
     return redirect(url_for("index"))
