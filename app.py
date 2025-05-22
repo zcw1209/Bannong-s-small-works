@@ -70,38 +70,34 @@ def fetch_cpbl_data():
 
     # **建立資料表**
     c.execute("""
-        CREATE TABLE IF NOT EXISTS cpbl_records (
+        CREATE TABLE IF NOT EXISTS cpbl_teams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             team TEXT UNIQUE,
             games INTEGER,
             wins INTEGER,
             losses INTEGER,
             draws INTEGER,
-            win_percentage REAL,
-            gb TEXT,
-            streak TEXT
+            win_percentage REAL
         )
     """)
 
     # **清除舊資料**
-    c.execute("DELETE FROM cpbl_records")
+    c.execute("DELETE FROM cpbl_teams")
 
     # **插入或更新資料**
     for team in team_data:
         c.execute('''
-            INSERT INTO cpbl_records (team, games, wins, losses, draws, win_percentage, gb, streak)
+            INSERT INTO cpbl_teams (team, games, wins, losses, draws, win_percentage)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(team) DO UPDATE SET
                 games = excluded.games,
                 wins = excluded.wins,
                 losses = excluded.losses,
                 draws = excluded.draws,
-                win_percentage = excluded.win_percentage,
-                gb = excluded.gb,
-                streak = excluded.streak
+                win_percentage = excluded.win_percentage
         ''', (
             team[0], int(team[1]), int(team[2]), int(team[3]),
-            int(team[4]), float(team[5]), team[6], team[7]
+            int(team[4]), float(team[5])
         ))
 
     # **確認資料表是否已成功更新**
@@ -197,11 +193,12 @@ mascot_details = {
 def index():
     conn = sqlite3.connect("cpbl_records.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT team, games, wins, losses, draws, win_rate FROM cpbl_teams")
+    cursor.execute("SELECT team, games, wins, losses, draws, win_percentage FROM cpbl_teams")
     teams = cursor.fetchall()
     conn.close()
 
-    return render_template("index.html", teams=teams,mascots=mascots)
+    return render_template("index.html", teams=teams, mascots=mascots)
+
 
 @app.route("/update")
 def update():
