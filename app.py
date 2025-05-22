@@ -52,17 +52,16 @@ def fetch_cpbl_data():
         cols = row.find_all("td")
         if len(cols) < 4:
             continue
-        team_name = cols[0].text.strip()
-        games = int(cols[1].text.strip())
+        # 清理隊名：去除換行、全形空白、前後空白
+        team_name = cols[0].text.strip().replace("\n", "").replace("　", "").replace(" ", "")
+        
         try:
+            games = int(cols[1].text.strip())
             win_str = cols[2].text.strip()
             wins, draws, losses = map(int, win_str.split("-"))
-        except:
-            continue
-        try:
             win_rate = float(cols[3].text.strip())
         except:
-            win_rate = 0.0
+            continue
 
         teams.append({
             "team": team_name,
@@ -98,9 +97,10 @@ def fetch_cpbl_data():
                 draws = excluded.draws,
                 win_rate = excluded.win_rate
         """, (team["team"], team["games"], team["wins"], team["losses"], team["draws"], team["win_rate"]))
-    
+
     conn.commit()
     conn.close()
+
 
 # 吉祥物資料（假設手動先寫好）
 mascots = [
