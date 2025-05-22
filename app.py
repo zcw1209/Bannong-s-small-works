@@ -10,6 +10,8 @@ from bs4 import BeautifulSoup
 import os
 from datetime import datetime, timedelta
 
+import time
+
 app = Flask(__name__)
 
 LAST_UPDATE_FILE = "last_update_time.txt"
@@ -32,74 +34,60 @@ def update_last_update_time():
 
 def fetch_cpbl_data():
     chromedriver_autoinstaller.install()
-    URL = "https://www.cpbl.com.tw/standings/season"
-    driver = webdriver.Chrome()
-    driver.get(URL)
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")
+    driver = webdriver.Chrome(options=options)
 
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "RecordTableWrap"))
-    )
+    url = "https://www.cpbl.com.tw/standings/season"
+    driver.get(url)
+
+    try:
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "el-table__body"))
+        )
+    except:
+        print("等待表格載入時失敗")
+        driver.quit()
+        return
+
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    record_table = soup.find("div", class_="RecordTableWrap")
-    if record_table is None:
+    table = soup.find("table", class_="el-table__body")
+    if table is None:
+        print("無法找到表格，網站結構可能已更新")
         return
 
-    teams = []
-    table_rows = record_table.find_all("tr")[1:]
-    for row in table_rows:
-        cols = row.find_all("td")
-        if len(cols) < 4:
-            continue
-        # 清理隊名：去除換行、全形空白、前後空白
-        team_name = cols[0].text.strip().replace("\n", "").replace("　", "").replace(" ", "")
-        
-        try:
-            games = int(cols[1].text.strip())
-            win_str = cols[2].text.strip()
-            wins, draws, losses = map(int, win_str.split("-"))
-            win_rate = float(cols[3].text.strip())
-        except:
-            continue
-
-        teams.append({
-            "team": team_name,
-            "games": games,
-            "wins": wins,
-            "losses": losses,
-            "draws": draws,
-            "win_rate": win_rate
-        })
+    team_data = []
+    for row in table.find_all("tr"):
+        columns = row.find_all("td")
+        if len(columns) >= 8:
+            team_data.append([col.text.strip() for col in columns[:8]])
 
     conn = sqlite3.connect("cpbl_records.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS cpbl_teams (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            team TEXT UNIQUE,
-            games INTEGER,
-            wins INTEGER,
-            losses INTEGER,
-            draws INTEGER,
-            win_rate REAL
-        )
-    """)
+    c = conn.cursor()
+    c.execute("DELETE FROM cpbl_records")
 
-    for team in teams:
-        cursor.execute("""
-            INSERT INTO cpbl_teams (team, games, wins, losses, draws, win_rate)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(team) DO UPDATE SET
-                games = excluded.games,
-                wins = excluded.wins,
-                losses = excluded.losses,
-                draws = excluded.draws,
-                win_rate = excluded.win_rate
-        """, (team["team"], team["games"], team["wins"], team["losses"], team["draws"], team["win_rate"]))
+    for team in team_data:
+        c.execute('''
+            INSERT INTO cpbl_records (team, games, wins, losses, draws, win_percentage, gb, streak)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            team[0], int(team[1]), int(team[2]), int(team[3]),
+            int(team[4]), float(team[5]), team[6], team[7]
+        ))
 
     conn.commit()
     conn.close()
+
+    with open("last_update_time.txt", "w") as f:
+        f.write(datetime.now().isoformat())
+
+
+    # 更新最後更新時間
+    with open("last_update_time.txt", "w") as f:
+        f.write(datetime.datetime.now().isoformat())
+
 
 
 # 吉祥物資料（假設手動先寫好）
