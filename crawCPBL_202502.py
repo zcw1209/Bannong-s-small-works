@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu May 15 14:18:41 2025
-@author: user
-"""
 import requests
 from bs4 import BeautifulSoup
 import sqlite3
@@ -60,9 +55,9 @@ for row in table_rows:
         continue
 
     try:
-        win_rate = float(cols[3].text.strip())
+        win_percentage = float(cols[3].text.strip())
     except ValueError:
-        win_rate = 0.0  # 若轉換失敗則設為 0.0
+        win_percentage = 0.0  # 若轉換失敗則設為 0.0
 
     team_data = {
         "team": team_name,
@@ -70,7 +65,7 @@ for row in table_rows:
         "wins": wins,
         "losses": losses,
         "draws": draws,
-        "win_rate": win_rate
+        "win_percentage": win_percentage
     }
     teams.append(team_data)
 
