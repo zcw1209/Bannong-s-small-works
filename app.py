@@ -15,6 +15,8 @@ import time
 
 import sys
 
+import pymysql
+
 app = Flask(__name__)
 
 LAST_UPDATE_FILE = "last_update_time.txt"
@@ -75,31 +77,40 @@ def fetch_cpbl_data():
             continue
         teams.append((team_name, games, wins, losses, draws, win_percentage))
 
-    conn = sqlite3.connect("cpbl_records.db")
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS cpbl_teams (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            team TEXT UNIQUE,
-            games INTEGER,
-            wins INTEGER,
-            losses INTEGER,
-            draws INTEGER,
-            win_percentage REAL
-        )
-    """)
-    c.execute("DELETE FROM cpbl_teams")
+     # ✅ 儲存到 MySQL
+    conn = pymysql.connect(
+        host="localhost",
+        user="Chase",
+        password="$Ff19931209",
+        database="cpbl",
+        charset="utf8mb4",
+        cursorclass=pymysql.cursors.Cursor
+    )
+    cursor = conn.cursor()
+
+    # 如果尚未建立資料表，可取消以下註解
+    # cursor.execute("""
+    #     CREATE TABLE IF NOT EXISTS cpbl_teams (
+    #         id INT AUTO_INCREMENT PRIMARY KEY,
+    #         team VARCHAR(255) UNIQUE,
+    #         games INT,
+    #         wins INT,
+    #         losses INT,
+    #         draws INT,
+    #         win_percentage FLOAT
+    #     )
+    # """)
 
     for team in teams:
-        c.execute('''
+        cursor.execute('''
             INSERT INTO cpbl_teams (team, games, wins, losses, draws, win_percentage)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(team) DO UPDATE SET
-                games = excluded.games,
-                wins = excluded.wins,
-                losses = excluded.losses,
-                draws = excluded.draws,
-                win_percentage = excluded.win_percentage
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                games = VALUES(games),
+                wins = VALUES(wins),
+                losses = VALUES(losses),
+                draws = VALUES(draws),
+                win_percentage = VALUES(win_percentage)
         ''', team)
 
     conn.commit()
@@ -108,7 +119,7 @@ def fetch_cpbl_data():
     with open("last_update_time.txt", "w") as f:
         f.write(datetime.now().isoformat())
 
-    print("球隊戰績已成功更新並存入 SQLite 資料庫！")
+    print("球隊戰績已成功更新並存入 MySQL 資料庫！")
 
 
 
@@ -188,7 +199,14 @@ mascot_details = {
 
 @app.route("/")
 def index():
-    conn = sqlite3.connect("cpbl_records.db")
+    conn = pymysql.connect(
+        host="localhost",
+        user="Chase",
+        password="$Ff19931209",
+        database="cpbl",
+        charset="utf8mb4",
+        cursorclass=pymysql.cursors.DictCursor
+    )
     cursor = conn.cursor()
     cursor.execute("SELECT team, games, wins, losses, draws, win_percentage FROM cpbl_teams")
     teams = cursor.fetchall()
