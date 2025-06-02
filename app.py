@@ -17,6 +17,9 @@ import sys
 
 import pymysql
 
+from dotenv import load_dotenv
+load_dotenv()  # 讀取 .env 檔
+
 app = Flask(__name__)
 
 LAST_UPDATE_FILE = "last_update_time.txt"
@@ -79,27 +82,28 @@ def fetch_cpbl_data():
 
      # ✅ 儲存到 MySQL
     conn = pymysql.connect(
-        host="localhost",
-        user="Chase",
-        password="$Ff19931209",
-        database="cpbl",
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        port=int(os.getenv("DB_PORT")),
         charset="utf8mb4",
         cursorclass=pymysql.cursors.Cursor
     )
     cursor = conn.cursor()
 
-    # 如果尚未建立資料表，可取消以下註解
-    # cursor.execute("""
-    #     CREATE TABLE IF NOT EXISTS cpbl_teams (
-    #         id INT AUTO_INCREMENT PRIMARY KEY,
-    #         team VARCHAR(255) UNIQUE,
-    #         games INT,
-    #         wins INT,
-    #         losses INT,
-    #         draws INT,
-    #         win_percentage FLOAT
-    #     )
-    # """)
+    #如果尚未建立資料表，可取消以下註解
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cpbl_teams (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            team VARCHAR(255) UNIQUE,
+            games INT,
+            wins INT,
+            losses INT,
+            draws INT,
+            win_percentage FLOAT
+        )
+    """)
 
     for team in teams:
         cursor.execute('''
@@ -200,10 +204,11 @@ mascot_details = {
 @app.route("/")
 def index():
     conn = pymysql.connect(
-        host="localhost",
-        user="Chase",
-        password="$Ff19931209",
-        database="cpbl",
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        port=int(os.getenv("DB_PORT")),
         charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor
     )
