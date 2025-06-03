@@ -105,6 +105,9 @@ def fetch_cpbl_data():
         )
     """)
 
+    # 🔥 清空舊資料
+    cursor.execute("DELETE FROM cpbl_teams")
+
     for team in teams:
         cursor.execute('''
             INSERT INTO cpbl_teams (team, games, wins, losses, draws, win_percentage)
@@ -275,4 +278,5 @@ def mascot_info(team, mascot_name):
                                                                                      
 
 if __name__ == "__main__":
+    # fetch_cpbl_data()
     app.run(debug=True)
